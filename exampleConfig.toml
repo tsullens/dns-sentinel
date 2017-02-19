@@ -1,0 +1,7 @@
+
+# Example config for dnsentinel
+
+title = "TOML Example"
+
+- Zone / Domain Name e.g. tcsullens.com, homelab.tcsullens.com
+- Record e.g. atlas. , vpn. , 

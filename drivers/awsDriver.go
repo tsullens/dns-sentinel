@@ -80,7 +80,7 @@ func getRecordSet(svc *route53.Route53, awsHostedZone *route53.HostedZone, recor
       return recordSet, nil
     }
   }
-  return nil, errors.New(fmt.Sprintf("Failed to find record %s in zone %s", recordName, awsHostedZone.Name))
+  return nil, errors.New(fmt.Sprintf("Failed to find record %s in zone %s", recordName, *awsHostedZone.Name))
 }
 
 

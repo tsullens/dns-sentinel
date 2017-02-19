@@ -1,38 +1,33 @@
 package main
 
 import (
-  "flag"
   "fmt"
   "os"
   "dnsentinel/network"
   "dnsentinel/drivers"
 )
 
-var (
-  ifaceName string
-  zoneFlag string
-  recordFlag string
+const (
+  domainName = "homelab.tcsullens.com." // Zone Name
+  discovery = "nat"
+  ifaceName = "en0"
+  recordName = "vpn"
+  validRecord = "[a-zA-Z]+(\\.[a-zA-Z]+)+\\.?"
 )
-
-const validRecord = "[a-zA-Z]+(\\.[a-zA-Z]+)+\\.?"
 
 func main() {
 
-  flag.StringVar(&ifaceName, "iface", "eth0", "Name of the interface to watch.")
-  flag.StringVar(&zoneFlag, "zone", "", "Hosted Zone. e.g. example.com")
-  flag.StringVar(&recordFlag, "record", "", "Record Name")
-  flag.Parse()
-
-  niface, err := network.GetNatNetwork()
+  ipAddr, err := network.GetLocalNetwork(ifaceName)
   if err != nil {
     fmt.Println(err.Error())
     os.Exit(1)
   }
-  //fmt.Println(niface)
+  fmt.Println(ipAddr.NetworkAddress())
   awsDriver := &drivers.AwsDriver{
-    IpAddr: niface.IP_four,
-    ZoneName: zoneFlag,
-    RecordName: recordFlag,
+    IpAddr: ipAddr.NetworkAddress(),
+    ZoneName: domainName,
+    RecordName: fmt.Sprintf("%s.%s", recordName, domainName),
   }
-  awsDriver.Run()
+  fmt.Println(awsDriver)
+  //awsDriver.Run()
 }
