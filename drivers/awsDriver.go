@@ -6,6 +6,7 @@ import (
   "log"
   "github.com/aws/aws-sdk-go/service/route53"
   "github.com/aws/aws-sdk-go/aws/session"
+  "github.com/aws/aws-sdk-go/aws/credentials"
   "github.com/aws/aws-sdk-go/aws"
   "github.com/spf13/viper"
 )
@@ -24,7 +25,18 @@ const RRType = "A"
 
 func (driver *AwsDriver) Run(ipAddr string) {
 
-  sess, err := session.NewSession()
+  awsConfig := aws.NewConfig()
+
+  if driver.ProviderConfig != nil {
+    if driver.ProviderConfig.IsSet("aws_access_key_id") && driver.ProviderConfig.IsSet("aws_secret_access_key") {
+      creds := credentials.NewStaticCredentials(driver.ProviderConfig.GetString("aws_access_key_id"), driver.ProviderConfig.GetString("aws_secret_access_key"), "")
+      awsConfig = aws.NewConfig().WithCredentials(creds)
+    } else {
+      driver.AppLogger.Printf("Missing parameters for section 'provider.aws'\n")
+    }
+  }
+
+  sess, err := session.NewSession(awsConfig)
   if err != nil {
     driver.AppLogger.Printf("Failed to created session: %s", err)
     return

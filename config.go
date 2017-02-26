@@ -4,7 +4,6 @@ import (
   "fmt"
   "os"
   "log"
-  "flag"
   "dns-sentinel/drivers"
   "github.com/spf13/viper"
 )
