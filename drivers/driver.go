@@ -1,5 +1,5 @@
 package drivers
 
 type Driver interface {
-  Run()
+  Run(ipAddr string)
 }

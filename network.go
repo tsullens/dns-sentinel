@@ -1,4 +1,4 @@
-package network
+package main
 
 import (
   "fmt"
@@ -7,6 +7,7 @@ import (
   "io/ioutil"
   "regexp"
   "strings"
+  "github.com/spf13/viper"
 )
 
 var lookups = []string{
@@ -20,6 +21,7 @@ var lookups = []string{
   implement this in such a way that IPv6 integration could be easily tied in?
   Idk, maybe just a simple string representing the IP would be fine.
 */
+
 type IPAddressString interface {
   NetworkAddress() string
 }
@@ -30,6 +32,10 @@ type IPFourAddressString struct {
 func (istring *IPFourAddressString) NetworkAddress() (ipAddr string) {
   return istring.addr
 }
+
+/*
+  Errors
+*/
 
 type IPClassError struct {
   msg string
@@ -52,12 +58,16 @@ func (err *NetworkError) Error() (msg string) {
   return fmt.Sprintf("NetworkError: %s", msg)
 }
 
+
+type DiscoverNetwork func(cfg *viper.Viper) (ipAddr IPAddressString, err error)
 /*
   This function gets the network address of a local interface.
   This, like it's sibling function, is used depending on a configuration value -
   and this function specifically is not the default.
 */
-func GetLocalNetwork(ifaceName string) (ipAddr IPAddressString, err error) {
+func GetLocalNetwork(cfg *viper.Viper) (ipAddr IPAddressString, err error) {
+// Really only need the ifaceName from the Viper Config
+  ifaceName := cfg.GetString("interface")
 
   iface, err := net.InterfaceByName(ifaceName)
 
@@ -103,7 +113,9 @@ func GetLocalNetwork(ifaceName string) (ipAddr IPAddressString, err error) {
   just making http calls here, and the first one that completes successfuly we'll
   use as our IP address.
 */
-func GetNatNetwork() (ipAddr IPAddressString, err error) {
+func GetNatNetwork(cfg *viper.Viper) (ipAddr IPAddressString, err error) {
+// Not really using cfg here for anything - maybe later
+
   for _, site := range lookups {
     resp, err := http.Get(site)
     if err == nil {

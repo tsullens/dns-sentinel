@@ -3,54 +3,57 @@ package drivers
 import (
   "errors"
   "fmt"
-  "os"
+  "log"
   "github.com/aws/aws-sdk-go/service/route53"
   "github.com/aws/aws-sdk-go/aws/session"
   "github.com/aws/aws-sdk-go/aws"
+  "github.com/spf13/viper"
 )
 
 // Info
 // HostedZone https://docs.aws.amazon.com/sdk-for-go/api/service/route53/#HostedZone
 
 type AwsDriver struct {
-  IpAddr string
-  ZoneName string
-  RecordName string
+  ZoneName        string
+  RecordName      string
+  ProviderConfig  *viper.Viper
+  AppLogger       *log.Logger
 }
 
 const RRType = "A"
 
-func (driver *AwsDriver) Run() {
+func (driver *AwsDriver) Run(ipAddr string) {
 
   sess, err := session.NewSession()
   if err != nil {
-    fmt.Println("Failed to created session, ", err)
-    os.Exit(1)
+    driver.AppLogger.Printf("Failed to created session: %s", err)
+    return
   }
   svc := route53.New(sess)
   awsHostedZone, err := getHostedZoneId(svc, driver.ZoneName)
   if err != nil {
-    fmt.Println(err.Error())
-    os.Exit(1)
+    driver.AppLogger.Println(err.Error())
+    return
   }
   rRecordSet, err := getRecordSet(svc, awsHostedZone, driver.RecordName)
   if err != nil {
-    fmt.Println(err)
-    os.Exit(1)
+    driver.AppLogger.Println(err)
+    return
   }
   if *rRecordSet.Type == RRType {
-    if *rRecordSet.ResourceRecords[0].Value != driver.IpAddr {
-      change := formatChange(driver.RecordName, driver.IpAddr)
-      fmt.Printf("Submitting change for %s : %s -> %s\n", driver.RecordName, *rRecordSet.ResourceRecords[0].Value, driver.IpAddr)
+    if *rRecordSet.ResourceRecords[0].Value != ipAddr {
+      change := formatChange(driver.RecordName, ipAddr)
+      driver.AppLogger.Printf("Submitting change for %s : %s -> %s\n", driver.RecordName, *rRecordSet.ResourceRecords[0].Value, ipAddr)
       resp, err := submitChanges(svc, []*route53.Change{change}, awsHostedZone)
       if err != nil {
-        fmt.Println(err.Error())
+        driver.AppLogger.Println(err.Error())
+        return
       } else {
-        fmt.Println(resp)
+        driver.AppLogger.Println("ChangeSet submitted successfully: %s", resp)
       }
     }
   }
-  fmt.Println("No change needed.")
+  driver.AppLogger.Println("No change needed.")
 }
 
 func getHostedZoneId(svc *route53.Route53, zoneName string) (awsHostedZone *route53.HostedZone, err error ){
@@ -64,7 +67,7 @@ func getHostedZoneId(svc *route53.Route53, zoneName string) (awsHostedZone *rout
       return hostedZone, nil
     }
   }
-  return nil, errors.New("Not Found")
+  return nil, errors.New(fmt.Sprintf("Hosted Zone '%s' not found", zoneName))
 }
 
 func getRecordSet(svc *route53.Route53, awsHostedZone *route53.HostedZone, recordName string) (set *route53.ResourceRecordSet, err error) {
@@ -109,7 +112,6 @@ func submitChanges(svc *route53.Route53, changes []*route53.Change, awsHostedZon
     },
     HostedZoneId: awsHostedZone.Id,
   }
-  fmt.Println(reqParams)
   resp, err = svc.ChangeResourceRecordSets(reqParams)
   if err != nil {
     return nil, err
