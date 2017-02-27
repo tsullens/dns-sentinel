@@ -1,4 +1,4 @@
-# dnsentinel
+# dns-sentinel
 
 This is a small Go program that can handle watching and auto-updating a DNS A record.
 Basically I have a few A records that point to residential IPs which can occasionally change.
