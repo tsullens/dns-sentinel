@@ -33,7 +33,7 @@ func setupConfig() {
   // Add flag to specify config file
 
   runtime_viper.SetConfigType("toml")
-  runtime_viper.SetConfigName("test")
+  runtime_viper.SetConfigName("sentinel")
   runtime_viper.AddConfigPath(".")
   runtime_viper.AddConfigPath("/etc/dns-sentinel")
 
@@ -77,7 +77,7 @@ func validateAndLoadConfig() {
 
   switch runtime_viper.GetString("network.type") {
   case "local":
-    if viper.IsSet("network.interface") {
+    if runtime_viper.IsSet("network.interface") {
       Runtime_Config.NetFunc = GetLocalNetwork
     } else {
       Runtime_Logger.Fatalf("Network Config Error: 'interface' value is required for a 'type' of 'local'.\n")
