@@ -6,6 +6,7 @@ import (
   "log"
   "dns-sentinel/drivers"
   "github.com/spf13/viper"
+  flag "github.com/spf13/pflag"
 )
 
 type RunConfig struct {
@@ -15,10 +16,11 @@ type RunConfig struct {
 }
 
 var (
-  app_version     string = "0.0.1"
+  app_version     string = "0.0.2"
   Runtime_Logger  *log.Logger
   Runtime_Config  *RunConfig
   runtime_viper   *viper.Viper
+  configFile      string
 )
 
 func Init() {
@@ -31,13 +33,18 @@ func setupConfig() {
   runtime_viper = viper.New()
 
   // Add flag to specify config file
+  flag.StringVarP(&configFile, "config", "C", "", "Explicit path to config file")
+  flag.Parse()
+  if configFile != "" {
+    runtime_viper.SetConfigFile(configFile)
+  } else {
+    runtime_viper.SetConfigType("toml")
+    runtime_viper.SetConfigName("sentinel")
+    runtime_viper.AddConfigPath(".")
+    runtime_viper.AddConfigPath("/etc/dns-sentinel")
+  }
 
-  runtime_viper.SetConfigType("toml")
-  runtime_viper.SetConfigName("sentinel")
-  runtime_viper.AddConfigPath(".")
-  runtime_viper.AddConfigPath("/etc/dns-sentinel")
-
-  runtime_viper.SetDefault("appconfig", map[string]interface{}{"log": "/var/log/dns-sentinel.log", "loglevel": "info", "run_interval": 1800})
+  runtime_viper.SetDefault("appconfig", map[string]interface{}{"logfile": "/var/log/dns-sentinel.log", "loglevel": "info", "run_interval": 1800})
   runtime_viper.SetDefault("network.type", "nat")
 }
 
